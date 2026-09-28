@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hrms-manpower-planning-db
+    environment:
+      POSTGRES_DB: hrms_manpower_planning
+      POSTGRES_USER: hrms_user
+      POSTGRES_PASSWORD: hrms_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - hrms_manpower_planning_data:/var/lib/postgresql/data
+
+volumes:
+  hrms_manpower_planning_data:
