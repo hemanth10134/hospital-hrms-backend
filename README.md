@@ -33,3 +33,8 @@ Tests run against an in-memory H2 database (`test` profile) and don't require Do
 
 Requires JDK 21 — if `mvn -version` reports a different major version, set `JAVA_HOME`
 to a JDK 21 install before running.
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Railway/Render deploy steps and the required
+environment variables (`PORT`, `DB_*`, `CORS_ALLOWED_ORIGINS`).
