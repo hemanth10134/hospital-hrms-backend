@@ -3,14 +3,20 @@ package com.hospital.manpower.service.impl;
 import com.hospital.manpower.dto.request.ManpowerPlanReportFilter;
 import com.hospital.manpower.dto.response.ManpowerPlanReportRow;
 import com.hospital.manpower.entity.ManpowerPlan;
+import com.hospital.manpower.entity.PositionRequest;
+import com.hospital.manpower.enums.PositionRequestStatus;
 import com.hospital.manpower.mapper.ManpowerPlanMapper;
 import com.hospital.manpower.repository.ManpowerPlanRepository;
+import com.hospital.manpower.repository.PositionRequestRepository;
 import com.hospital.manpower.service.interfaces.IReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Builds the Analysis/Reports dataset by flattening every manpower plan's
@@ -30,20 +36,28 @@ public class ReportServiceImpl implements IReportService {
             "Organization", "Location", "Hospital", "Department", "Designation",
             "No of Beds", "Operating Hours", "Employee Working Hours",
             "Staffing Ratio", "Monthly Salary", "Leave Buffer (%)", "Planned",
-            "Required Staff (Position)", "Current Staff", "Vacancies", "Excess",
-            "Monthly Budget", "Status");
+            "Required Staff (Position)", "Current Staff", "Vacancies", "Excess", "Staffing Status",
+            "Monthly Budget", "Status", "Requested Positions", "Additional Monthly Budget",
+            "Reason", "Requested By");
 
     private final ManpowerPlanRepository manpowerPlanRepository;
+    private final PositionRequestRepository positionRequestRepository;
     private final ManpowerPlanMapper mapper;
 
     @Override
     public List<ManpowerPlanReportRow> generateReport(ManpowerPlanReportFilter filter) {
+        Map<String, List<PositionRequest>> openRequestsByLine =
+                positionRequestRepository.findByStatusNot(PositionRequestStatus.REJECTED).stream()
+                        .collect(Collectors.groupingBy(request ->
+                                lineKey(request.getDepartment().getId(), request.getDesignation().getId())));
+
         return manpowerPlanRepository.findAll().stream()
                 .filter(plan -> matchesPlan(plan, filter))
                 .flatMap(plan -> plan.getDesignations().stream()
                         .filter(line -> filter.designationId() == null
                                 || filter.designationId().equals(line.getDesignation().getId()))
-                        .map(line -> mapper.toReportRow(line, plan)))
+                        .map(line -> mapper.toReportRow(line, plan, openRequestsByLine.getOrDefault(
+                                lineKey(plan.getDepartment().getId(), line.getDesignation().getId()), List.of()))))
                 .filter(row -> filter.matchesVacancy(row.vacancies()))
                 .filter(row -> filter.matchesPlanned(Boolean.TRUE.equals(row.planned())))
                 .toList();
@@ -59,12 +73,19 @@ public class ReportServiceImpl implements IReportService {
                             String.valueOf(row.numberOfBeds()), String.valueOf(row.departmentOperatingHours()),
                             String.valueOf(row.employeeWorkingHours()), String.valueOf(row.staffingRatio()),
                             String.valueOf(row.monthlySalary()), String.valueOf(row.leaveBufferPct()),
-                            row.planned() ? "Planned" : "Not Planned", String.valueOf(row.requiredStaff()),
-                            String.valueOf(row.currentStaff()), String.valueOf(row.vacancies()),
-                            String.valueOf(row.excess()), String.valueOf(row.monthlyBudget()), row.planStatus()))
+                            Boolean.TRUE.equals(row.planned()) ? "Planned" : "Not Planned",
+                            String.valueOf(row.requiredStaff()), String.valueOf(row.currentStaff()),
+                            String.valueOf(row.vacancies()), String.valueOf(row.excess()), row.staffingStatus(),
+                            String.valueOf(row.monthlyBudget()), row.planStatus(),
+                            String.valueOf(row.requestedPositions()), String.valueOf(row.additionalMonthlyBudget()),
+                            quote(row.requestReasons()), quote(row.requestedBy())))
                     .append('\n');
         }
         return csv.toString();
+    }
+
+    private static String lineKey(UUID departmentId, UUID designationId) {
+        return departmentId + ":" + designationId;
     }
 
     private boolean matchesPlan(ManpowerPlan plan, ManpowerPlanReportFilter filter) {

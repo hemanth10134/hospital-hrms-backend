@@ -115,7 +115,8 @@ public class ManpowerPlanMapper {
                 plan.getSubmittedAt());
     }
 
-    public ManpowerPlanReportRow toReportRow(ManpowerPlanDesignation line, ManpowerPlan plan) {
+    public ManpowerPlanReportRow toReportRow(ManpowerPlanDesignation line, ManpowerPlan plan,
+                                             List<PositionRequest> requests) {
         int requiredStaff = StaffingCalculationUtil.calculateRequiredStaff(
                 plan.getNumberOfBeds(),
                 line.getStaffingRatio(),
@@ -123,6 +124,14 @@ public class ManpowerPlanMapper {
                 plan.getEmployeeWorkingHours(),
                 line.getLeaveBufferPct());
         int currentStaff = line.getCurrentStaff();
+        int vacancies = StaffingCalculationUtil.calculateVacancies(requiredStaff, currentStaff);
+
+        int requestedPositions = requests.stream().mapToInt(PositionRequest::getRequestedPositions).sum();
+        BigDecimal requestedBudget = requests.stream()
+                .map(PositionRequest::getAdditionalMonthlyBudget)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        String reasons = String.join("; ", requests.stream().map(PositionRequest::getReason).toList());
+        String requestedBy = String.join(", ", requests.stream().map(PositionRequest::getRequestedBy).distinct().toList());
 
         return new ManpowerPlanReportRow(
                 plan.getId(),
@@ -140,10 +149,15 @@ public class ManpowerPlanMapper {
                 line.getPlanned(),
                 requiredStaff,
                 currentStaff,
-                StaffingCalculationUtil.calculateVacancies(requiredStaff, currentStaff),
+                vacancies,
                 StaffingCalculationUtil.calculateExcess(requiredStaff, currentStaff),
+                vacancies > 0 ? "Vacant" : "Fully Staffed",
                 StaffingCalculationUtil.calculateMonthlyBudget(requiredStaff, line.getMonthlySalary()),
-                plan.getStatus().name());
+                plan.getStatus().name(),
+                requestedPositions,
+                requestedBudget,
+                reasons,
+                requestedBy);
     }
 
     public PositionRequestResponse toResponse(PositionRequest request) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hospital.manpower.dto.request.CreateManpowerPlanRequest;
 import com.hospital.manpower.dto.request.DesignationLineRequest;
 import com.hospital.manpower.dto.request.SubmitPlanRequest;
+import com.hospital.manpower.dto.request.UpdateManpowerPlanRequest;
 import com.hospital.manpower.entity.*;
 import com.hospital.manpower.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +53,11 @@ class ManpowerPlanControllerIntegrationTest {
     private Designation designation;
     private PlanningPeriod planningPeriod;
 
+    private String seed;
+
     @BeforeEach
     void seedReferenceData() {
+        seed = java.util.UUID.randomUUID().toString().substring(0, 8);
         organization = organizationRepository.save(newOrganization());
         location = locationRepository.save(newLocation(organization));
         hospital = hospitalRepository.save(newHospital(location));
@@ -93,9 +97,35 @@ class ManpowerPlanControllerIntegrationTest {
                 .andExpect(jsonPath("$.status", is("SUBMITTED")));
     }
 
+    @Test
+    void updatePlan_canBeSavedRepeatedlyWithTheSameDesignation() throws Exception {
+        DesignationLineRequest line = new DesignationLineRequest(
+                designation.getId(), BigDecimal.valueOf(10), BigDecimal.valueOf(150000), BigDecimal.valueOf(10), 2);
+        CreateManpowerPlanRequest createRequest = new CreateManpowerPlanRequest(
+                organization.getId(), location.getId(), hospital.getId(), department.getId(), planningPeriod.getId(),
+                20, BigDecimal.valueOf(24), BigDecimal.valueOf(8), "sunita.sharma", List.of(line));
+
+        String planId = objectMapper.readTree(mockMvc.perform(post("/api/v1/manpower-plans")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText();
+
+        UpdateManpowerPlanRequest updateRequest = new UpdateManpowerPlanRequest(
+                25, BigDecimal.valueOf(24), BigDecimal.valueOf(8), List.of(line));
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(put("/api/v1/manpower-plans/{id}", planId)
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(updateRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.numberOfBeds", is(25)))
+                    .andExpect(jsonPath("$.designations.length()", is(1)));
+        }
+    }
+
     private Organization newOrganization() {
         Organization organization = new Organization();
-        organization.setCode("PARK-GROUP");
+        organization.setCode("PARK-GROUP-" + seed);
         organization.setName("Park Group");
         return organization;
     }
@@ -134,7 +164,7 @@ class ManpowerPlanControllerIntegrationTest {
 
     private PlanningPeriod newPlanningPeriod() {
         PlanningPeriod period = new PlanningPeriod();
-        period.setCode("FY2026-27");
+        period.setCode("FY2026-27-" + seed);
         period.setLabel("Apr 2026 - Mar 2027");
         period.setStartDate(LocalDate.of(2026, 4, 1));
         period.setEndDate(LocalDate.of(2027, 3, 31));

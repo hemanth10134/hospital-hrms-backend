@@ -5,8 +5,9 @@ import java.util.UUID;
 
 /**
  * One designation-wise staffing line flattened for the Analysis/Reports screen
- * and CSV export, carrying the full organization → designation hierarchy so a
- * report row never needs a follow-up lookup.
+ * and export, carrying the full organization → designation hierarchy plus the
+ * open (non-rejected) additional position requests raised for the same
+ * department + designation, so a report row never needs a follow-up lookup.
  */
 public record ManpowerPlanReportRow(
         UUID planId,
@@ -26,7 +27,12 @@ public record ManpowerPlanReportRow(
         Integer currentStaff,
         Integer vacancies,
         Integer excess,
+        String staffingStatus,
         BigDecimal monthlyBudget,
-        String planStatus
+        String planStatus,
+        Integer requestedPositions,
+        BigDecimal additionalMonthlyBudget,
+        String requestReasons,
+        String requestedBy
 ) {
 }

@@ -16,4 +16,6 @@ public interface PositionRequestRepository extends JpaRepository<PositionRequest
             UUID departmentId, UUID designationId, Collection<PositionRequestStatus> statuses);
 
     List<PositionRequest> findByDepartmentIdAndStatusNot(UUID departmentId, PositionRequestStatus status);
+
+    List<PositionRequest> findByStatusNot(PositionRequestStatus status);
 }

@@ -16,7 +16,8 @@ import java.util.UUID;
  * values computed by the service layer, not persisted here.
  */
 @Entity
-@Table(name = "manpower_plan_designations")
+@Table(name = "manpower_plan_designations",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"plan_id", "designation_id"}))
 @Getter
 @Setter
 @NoArgsConstructor

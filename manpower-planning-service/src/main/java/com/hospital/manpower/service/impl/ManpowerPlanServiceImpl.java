@@ -100,6 +100,9 @@ public class ManpowerPlanServiceImpl implements IManpowerPlanService {
         plan.setEmployeeWorkingHours(request.employeeWorkingHours());
 
         plan.getDesignations().clear();
+        // Hibernate flushes inserts before orphan deletes; flush now so re-adding an
+        // existing designation doesn't hit the (plan_id, designation_id) unique key.
+        manpowerPlanRepository.flush();
         applyDesignationLines(plan, request.designations());
 
         ManpowerPlan saved = manpowerPlanRepository.save(plan);
