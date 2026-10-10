@@ -1,9 +1,14 @@
 package com.hospital.manpower.controller;
 
+import com.hospital.manpower.dto.request.CreateDesignationBody;
+import com.hospital.manpower.dto.request.CreateDesignationRequest;
 import com.hospital.manpower.dto.response.LookupDTO;
 import com.hospital.manpower.dto.response.PlanningPeriodDTO;
 import com.hospital.manpower.service.interfaces.IReferenceDataService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +44,14 @@ public class ReferenceDataController {
     @GetMapping("/organizations/{organizationId}/designations")
     public List<LookupDTO> getDesignations(@PathVariable UUID organizationId) {
         return referenceDataService.getDesignations(organizationId);
+    }
+
+    @PostMapping("/organizations/{organizationId}/designations")
+    public ResponseEntity<LookupDTO> createDesignation(@PathVariable UUID organizationId,
+                                                         @Valid @RequestBody CreateDesignationBody body) {
+        LookupDTO created = referenceDataService.createDesignation(
+                new CreateDesignationRequest(organizationId, body.code(), body.name()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping("/planning-periods")

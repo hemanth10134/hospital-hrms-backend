@@ -1,11 +1,19 @@
 package com.hospital.manpower.service.impl;
 
+import com.hospital.manpower.constants.ErrorMessages;
+import com.hospital.manpower.dto.request.CreateDesignationRequest;
 import com.hospital.manpower.dto.response.LookupDTO;
 import com.hospital.manpower.dto.response.PlanningPeriodDTO;
+import com.hospital.manpower.entity.Designation;
+import com.hospital.manpower.entity.Organization;
+import com.hospital.manpower.exception.DesignationAlreadyExistsException;
+import com.hospital.manpower.exception.ResourceNotFoundException;
 import com.hospital.manpower.mapper.ManpowerPlanMapper;
 import com.hospital.manpower.repository.*;
 import com.hospital.manpower.service.interfaces.IReferenceDataService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReferenceDataServiceImpl implements IReferenceDataService {
+
+    private static final Logger log = LoggerFactory.getLogger(ReferenceDataServiceImpl.class);
 
     private final OrganizationRepository organizationRepository;
     private final LocationRepository locationRepository;
@@ -48,6 +58,28 @@ public class ReferenceDataServiceImpl implements IReferenceDataService {
     @Override
     public List<LookupDTO> getDesignations(UUID organizationId) {
         return designationRepository.findByOrganizationId(organizationId).stream().map(mapper::toLookup).toList();
+    }
+
+    @Override
+    @Transactional
+    public LookupDTO createDesignation(CreateDesignationRequest request) {
+        Organization organization = organizationRepository.findById(request.organizationId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        String.format(ErrorMessages.ORGANIZATION_NOT_FOUND, request.organizationId())));
+
+        if (designationRepository.existsByOrganizationIdAndCode(request.organizationId(), request.code())) {
+            throw new DesignationAlreadyExistsException(
+                    String.format(ErrorMessages.DESIGNATION_CODE_ALREADY_EXISTS, request.code()));
+        }
+
+        Designation designation = new Designation();
+        designation.setOrganization(organization);
+        designation.setCode(request.code());
+        designation.setName(request.name());
+
+        Designation saved = designationRepository.save(designation);
+        log.info("Created designation {} ({}) for organization {}", saved.getName(), saved.getCode(), organization.getId());
+        return mapper.toLookup(saved);
     }
 
     @Override

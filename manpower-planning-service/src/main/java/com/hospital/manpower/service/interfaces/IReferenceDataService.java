@@ -1,5 +1,6 @@
 package com.hospital.manpower.service.interfaces;
 
+import com.hospital.manpower.dto.request.CreateDesignationRequest;
 import com.hospital.manpower.dto.response.LookupDTO;
 import com.hospital.manpower.dto.response.PlanningPeriodDTO;
 
@@ -17,6 +18,8 @@ public interface IReferenceDataService {
     List<LookupDTO> getDepartments(UUID hospitalId);
 
     List<LookupDTO> getDesignations(UUID organizationId);
+
+    LookupDTO createDesignation(CreateDesignationRequest request);
 
     List<PlanningPeriodDTO> getPlanningPeriods();
 }

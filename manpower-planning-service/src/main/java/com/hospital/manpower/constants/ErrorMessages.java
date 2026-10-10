@@ -28,4 +28,6 @@ public final class ErrorMessages {
             "An open position request already exists for this department and designation";
     public static final String ONLY_LOCKED_PLAN_CAN_BE_REOPENED =
             "Only a submitted or rejected plan can be reopened for modification";
+    public static final String DESIGNATION_CODE_ALREADY_EXISTS =
+            "A designation with code \"%s\" already exists for this organization";
 }

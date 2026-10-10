@@ -23,7 +23,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({InvalidPlanStateException.class, DuplicatePlanException.class,
-            DuplicateDesignationException.class, DuplicatePositionRequestException.class})
+            DuplicateDesignationException.class, DuplicatePositionRequestException.class,
+            DesignationAlreadyExistsException.class})
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         log.warn("Invalid request state: {}", ex.getMessage());
         return build(HttpStatus.CONFLICT, ex.getMessage(), List.of());
