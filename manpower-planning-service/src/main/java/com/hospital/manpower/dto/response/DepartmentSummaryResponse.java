@@ -6,6 +6,8 @@ public record DepartmentSummaryResponse(
         int totalRequiredStaff,
         int currentStaff,
         int openPositions,
-        BigDecimal estimatedMonthlyBudget
+        BigDecimal estimatedMonthlyBudget,
+        int additionalPositions,
+        BigDecimal additionalMonthlyBudgetRequested
 ) {
 }

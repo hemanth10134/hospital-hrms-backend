@@ -1,6 +1,7 @@
 package com.hospital.manpower.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -16,8 +17,10 @@ public record CreateManpowerPlanRequest(
         @NotNull UUID departmentId,
         @NotNull UUID planningPeriodId,
         @NotNull @Min(value = 0, message = "Number of beds cannot be negative") Integer numberOfBeds,
-        @NotNull @DecimalMin(value = "0.1", message = "Operating hours must be greater than zero") BigDecimal departmentOperatingHours,
-        @NotNull @DecimalMin(value = "0.1", message = "Working hours must be greater than zero") BigDecimal employeeWorkingHours,
+        @NotNull @DecimalMin(value = "0.1", message = "Operating hours must be greater than zero")
+        @DecimalMax(value = "24", message = "Operating hours cannot exceed 24 per day") BigDecimal departmentOperatingHours,
+        @NotNull @DecimalMin(value = "0.1", message = "Working hours must be greater than zero")
+        @DecimalMax(value = "24", message = "Working hours cannot exceed 24 per day") BigDecimal employeeWorkingHours,
         @NotNull String createdBy,
         @NotNull List<@Valid DesignationLineRequest> designations
 ) {

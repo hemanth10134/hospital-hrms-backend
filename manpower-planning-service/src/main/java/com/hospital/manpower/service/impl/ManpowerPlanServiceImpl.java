@@ -8,6 +8,8 @@ import com.hospital.manpower.dto.response.ManpowerPlanResponse;
 import com.hospital.manpower.dto.response.ManpowerPlanSummaryListItem;
 import com.hospital.manpower.entity.*;
 import com.hospital.manpower.enums.PlanStatus;
+import com.hospital.manpower.enums.PositionRequestStatus;
+import com.hospital.manpower.exception.DuplicateDesignationException;
 import com.hospital.manpower.exception.DuplicatePlanException;
 import com.hospital.manpower.exception.InvalidPlanStateException;
 import com.hospital.manpower.exception.ResourceNotFoundException;
@@ -21,7 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -38,6 +42,7 @@ public class ManpowerPlanServiceImpl implements IManpowerPlanService {
     private final DepartmentRepository departmentRepository;
     private final DesignationRepository designationRepository;
     private final PlanningPeriodRepository planningPeriodRepository;
+    private final PositionRequestRepository positionRequestRepository;
     private final ManpowerPlanMapper mapper;
 
     @Override
@@ -65,13 +70,13 @@ public class ManpowerPlanServiceImpl implements IManpowerPlanService {
         ManpowerPlan saved = manpowerPlanRepository.save(plan);
         log.info("Created manpower plan {} for hospital {} department {}", saved.getId(),
                 request.hospitalId(), request.departmentId());
-        return mapper.toResponse(saved);
+        return toResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ManpowerPlanResponse getPlan(UUID planId) {
-        return mapper.toResponse(getPlanOrThrow(planId));
+        return toResponse(getPlanOrThrow(planId));
     }
 
     @Override
@@ -99,7 +104,20 @@ public class ManpowerPlanServiceImpl implements IManpowerPlanService {
 
         ManpowerPlan saved = manpowerPlanRepository.save(plan);
         log.info("Updated draft manpower plan {}", planId);
-        return mapper.toResponse(saved);
+        return toResponse(saved);
+    }
+
+    @Override
+    public ManpowerPlanResponse reopenForModification(UUID planId) {
+        ManpowerPlan plan = getPlanOrThrow(planId);
+        if (plan.getStatus() != PlanStatus.SUBMITTED && plan.getStatus() != PlanStatus.REJECTED) {
+            throw new InvalidPlanStateException(ErrorMessages.ONLY_LOCKED_PLAN_CAN_BE_REOPENED);
+        }
+
+        plan.setStatus(PlanStatus.DRAFT);
+        ManpowerPlan saved = manpowerPlanRepository.save(plan);
+        log.info("Reopened manpower plan {} for modification", planId);
+        return toResponse(saved);
     }
 
     @Override
@@ -118,19 +136,34 @@ public class ManpowerPlanServiceImpl implements IManpowerPlanService {
 
         ManpowerPlan saved = manpowerPlanRepository.save(plan);
         log.info("Submitted manpower plan {} for approval by {}", planId, submittedBy);
-        return mapper.toResponse(saved);
+        return toResponse(saved);
+    }
+
+    private ManpowerPlanResponse toResponse(ManpowerPlan plan) {
+        List<PositionRequest> positionRequests =
+                positionRequestRepository.findByDepartmentIdAndStatusNot(
+                        plan.getDepartment().getId(), PositionRequestStatus.REJECTED);
+        return mapper.toResponse(plan, positionRequests);
     }
 
     private void applyDesignationLines(ManpowerPlan plan, List<DesignationLineRequest> lineRequests) {
+        Set<UUID> seenDesignationIds = new HashSet<>();
         int order = 0;
         for (DesignationLineRequest lineRequest : lineRequests) {
+            Designation designation = getDesignation(lineRequest.designationId());
+            if (!seenDesignationIds.add(designation.getId())) {
+                throw new DuplicateDesignationException(
+                        String.format(ErrorMessages.DUPLICATE_DESIGNATION_IN_PLAN, designation.getName()));
+            }
+
             ManpowerPlanDesignation line = new ManpowerPlanDesignation();
             line.setPlan(plan);
-            line.setDesignation(getDesignation(lineRequest.designationId()));
+            line.setDesignation(designation);
             line.setStaffingRatio(lineRequest.staffingRatio());
             line.setMonthlySalary(lineRequest.monthlySalary());
             line.setLeaveBufferPct(lineRequest.leaveBufferPct());
             line.setCurrentStaff(lineRequest.currentStaff());
+            line.setPlanned(lineRequest.planned());
             line.setDisplayOrder(order++);
             plan.getDesignations().add(line);
         }

@@ -18,5 +18,7 @@ public interface IManpowerPlanService {
 
     ManpowerPlanResponse updatePlan(UUID planId, UpdateManpowerPlanRequest request);
 
+    ManpowerPlanResponse reopenForModification(UUID planId);
+
     ManpowerPlanResponse submitForApproval(UUID planId, String submittedBy);
 }

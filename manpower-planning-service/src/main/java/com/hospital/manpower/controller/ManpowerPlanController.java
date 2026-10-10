@@ -44,6 +44,11 @@ public class ManpowerPlanController {
         return manpowerPlanService.updatePlan(planId, request);
     }
 
+    @PostMapping("/{planId}/reopen")
+    public ManpowerPlanResponse reopenForModification(@PathVariable UUID planId) {
+        return manpowerPlanService.reopenForModification(planId);
+    }
+
     @PostMapping("/{planId}/submit")
     public ManpowerPlanResponse submitForApproval(@PathVariable UUID planId,
                                                    @Valid @RequestBody SubmitPlanRequest request) {

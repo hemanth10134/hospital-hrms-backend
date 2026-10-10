@@ -9,6 +9,7 @@ public record PositionRequestResponse(
         LookupDTO department,
         LookupDTO designation,
         Integer requestedPositions,
+        Integer currentStaff,
         String reason,
         BigDecimal additionalMonthlyBudget,
         String status,

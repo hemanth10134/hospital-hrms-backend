@@ -12,6 +12,15 @@ public record DesignationLineRequest(
         @NotNull @DecimalMin(value = "0.01", message = "Staffing ratio must be greater than zero") BigDecimal staffingRatio,
         @NotNull @DecimalMin(value = "0", message = "Monthly salary cannot be negative") BigDecimal monthlySalary,
         @NotNull @DecimalMin(value = "0", message = "Leave buffer cannot be negative") BigDecimal leaveBufferPct,
-        @NotNull @Min(value = 0, message = "Current staff cannot be negative") Integer currentStaff
+        @NotNull @Min(value = 0, message = "Current staff cannot be negative") Integer currentStaff,
+        Boolean planned
 ) {
+    public DesignationLineRequest(UUID designationId, BigDecimal staffingRatio, BigDecimal monthlySalary,
+                                   BigDecimal leaveBufferPct, Integer currentStaff) {
+        this(designationId, staffingRatio, monthlySalary, leaveBufferPct, currentStaff, true);
+    }
+
+    public Boolean planned() {
+        return planned == null || planned;
+    }
 }

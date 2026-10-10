@@ -14,8 +14,10 @@ public record DesignationLineResponse(
         BigDecimal staffingRatio,
         BigDecimal monthlySalary,
         BigDecimal leaveBufferPct,
+        Boolean planned,
         Integer requiredStaff,
         Integer currentStaff,
+        BigDecimal staffingPercentage,
         Integer vacancies,
         Integer excess,
         BigDecimal monthlyBudget

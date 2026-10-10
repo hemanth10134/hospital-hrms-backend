@@ -9,6 +9,7 @@ import com.hospital.manpower.entity.Designation;
 import com.hospital.manpower.entity.ManpowerPlan;
 import com.hospital.manpower.entity.PositionRequest;
 import com.hospital.manpower.enums.PositionRequestStatus;
+import com.hospital.manpower.exception.DuplicatePositionRequestException;
 import com.hospital.manpower.exception.InvalidPlanStateException;
 import com.hospital.manpower.exception.ResourceNotFoundException;
 import com.hospital.manpower.mapper.ManpowerPlanMapper;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -40,6 +42,9 @@ public class PositionRequestServiceImpl implements IPositionRequestService {
     private final ManpowerPlanRepository manpowerPlanRepository;
     private final ManpowerPlanMapper mapper;
 
+    private static final Set<PositionRequestStatus> OPEN_STATUSES =
+            Set.of(PositionRequestStatus.PENDING_APPROVAL, PositionRequestStatus.UNDER_REVIEW);
+
     @Override
     public PositionRequestResponse createPositionRequest(CreatePositionRequestRequest request) {
         Department department = departmentRepository.findById(request.departmentId())
@@ -49,10 +54,16 @@ public class PositionRequestServiceImpl implements IPositionRequestService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         String.format(ErrorMessages.DESIGNATION_NOT_FOUND, request.designationId())));
 
+        if (positionRequestRepository.existsByDepartmentIdAndDesignationIdAndStatusIn(
+                request.departmentId(), request.designationId(), OPEN_STATUSES)) {
+            throw new DuplicatePositionRequestException(ErrorMessages.DUPLICATE_POSITION_REQUEST);
+        }
+
         PositionRequest positionRequest = new PositionRequest();
         positionRequest.setDepartment(department);
         positionRequest.setDesignation(designation);
         positionRequest.setRequestedPositions(request.requestedPositions());
+        positionRequest.setCurrentStaff(request.currentStaff());
         positionRequest.setReason(request.reason());
         positionRequest.setAdditionalMonthlyBudget(request.additionalMonthlyBudget());
         positionRequest.setRequestedBy(request.requestedBy());

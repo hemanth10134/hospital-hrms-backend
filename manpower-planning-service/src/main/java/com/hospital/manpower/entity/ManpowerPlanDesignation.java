@@ -49,6 +49,9 @@ public class ManpowerPlanDesignation {
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder = 0;
 
+    @Column(name = "planned", nullable = false)
+    private Boolean planned = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

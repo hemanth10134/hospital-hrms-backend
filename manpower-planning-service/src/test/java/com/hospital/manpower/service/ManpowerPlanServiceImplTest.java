@@ -3,6 +3,7 @@ package com.hospital.manpower.service;
 import com.hospital.manpower.dto.request.CreateManpowerPlanRequest;
 import com.hospital.manpower.dto.request.DesignationLineRequest;
 import com.hospital.manpower.entity.*;
+import com.hospital.manpower.exception.DuplicateDesignationException;
 import com.hospital.manpower.exception.DuplicatePlanException;
 import com.hospital.manpower.exception.InvalidPlanStateException;
 import com.hospital.manpower.mapper.ManpowerPlanMapper;
@@ -41,6 +42,8 @@ class ManpowerPlanServiceImplTest {
     private DesignationRepository designationRepository;
     @Mock
     private PlanningPeriodRepository planningPeriodRepository;
+    @Mock
+    private PositionRequestRepository positionRequestRepository;
 
     private ManpowerPlanServiceImpl service;
 
@@ -55,7 +58,8 @@ class ManpowerPlanServiceImplTest {
     void setUp() {
         service = new ManpowerPlanServiceImpl(
                 manpowerPlanRepository, organizationRepository, locationRepository, hospitalRepository,
-                departmentRepository, designationRepository, planningPeriodRepository, new ManpowerPlanMapper());
+                departmentRepository, designationRepository, planningPeriodRepository, positionRequestRepository,
+                new ManpowerPlanMapper());
 
         organizationId = UUID.randomUUID();
         locationId = UUID.randomUUID();
@@ -138,6 +142,23 @@ class ManpowerPlanServiceImplTest {
 
         assertThatThrownBy(() -> service.createPlan(buildRequest(List.of())))
                 .isInstanceOf(DuplicatePlanException.class);
+
+        verify(manpowerPlanRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlan_rejectsDuplicateDesignationInSamePlan() {
+        stubReferenceLookups();
+        when(manpowerPlanRepository.findByHospitalIdAndDepartmentIdAndPlanningPeriodId(any(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        DesignationLineRequest line1 = new DesignationLineRequest(
+                designationId, BigDecimal.valueOf(10), BigDecimal.valueOf(150000), BigDecimal.valueOf(10), 2);
+        DesignationLineRequest line2 = new DesignationLineRequest(
+                designationId, BigDecimal.valueOf(5), BigDecimal.valueOf(100000), BigDecimal.valueOf(5), 1);
+
+        assertThatThrownBy(() -> service.createPlan(buildRequest(List.of(line1, line2))))
+                .isInstanceOf(DuplicateDesignationException.class);
 
         verify(manpowerPlanRepository, never()).save(any());
     }

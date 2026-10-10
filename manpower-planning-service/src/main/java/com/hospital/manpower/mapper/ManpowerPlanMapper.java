@@ -43,6 +43,11 @@ public class ManpowerPlanMapper {
                 plan.getEmployeeWorkingHours(),
                 line.getLeaveBufferPct());
         int currentStaff = line.getCurrentStaff();
+        BigDecimal staffingPercentage = requiredStaff == 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(currentStaff)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(requiredStaff), 2, java.math.RoundingMode.HALF_UP);
 
         return new DesignationLineResponse(
                 line.getId(),
@@ -51,24 +56,32 @@ public class ManpowerPlanMapper {
                 line.getStaffingRatio(),
                 line.getMonthlySalary(),
                 line.getLeaveBufferPct(),
+                line.getPlanned(),
                 requiredStaff,
                 currentStaff,
+                staffingPercentage,
                 StaffingCalculationUtil.calculateVacancies(requiredStaff, currentStaff),
                 StaffingCalculationUtil.calculateExcess(requiredStaff, currentStaff),
                 StaffingCalculationUtil.calculateMonthlyBudget(requiredStaff, line.getMonthlySalary()));
     }
 
-    public DepartmentSummaryResponse toSummary(List<DesignationLineResponse> lines) {
+    public DepartmentSummaryResponse toSummary(List<DesignationLineResponse> lines, List<PositionRequest> positionRequests) {
         int totalRequired = lines.stream().mapToInt(DesignationLineResponse::requiredStaff).sum();
         int totalCurrent = lines.stream().mapToInt(DesignationLineResponse::currentStaff).sum();
         BigDecimal totalBudget = lines.stream()
                 .map(DesignationLineResponse::monthlyBudget)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return new DepartmentSummaryResponse(totalRequired, totalCurrent, totalRequired - totalCurrent, totalBudget);
+        int additionalPositions = positionRequests.stream().mapToInt(PositionRequest::getRequestedPositions).sum();
+        BigDecimal additionalBudget = positionRequests.stream()
+                .map(PositionRequest::getAdditionalMonthlyBudget)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new DepartmentSummaryResponse(totalRequired, totalCurrent, totalRequired - totalCurrent, totalBudget,
+                additionalPositions, additionalBudget);
     }
 
-    public ManpowerPlanResponse toResponse(ManpowerPlan plan) {
+    public ManpowerPlanResponse toResponse(ManpowerPlan plan, List<PositionRequest> positionRequests) {
         List<DesignationLineResponse> lines = plan.getDesignations().stream()
                 .sorted((a, b) -> Integer.compare(a.getDisplayOrder(), b.getDisplayOrder()))
                 .map(line -> toDesignationLineResponse(line, plan))
@@ -89,7 +102,7 @@ public class ManpowerPlanMapper {
                 plan.getCreatedAt(),
                 plan.getUpdatedAt(),
                 lines,
-                toSummary(lines));
+                toSummary(lines, positionRequests));
     }
 
     public ManpowerPlanSummaryListItem toListItem(ManpowerPlan plan) {
@@ -102,12 +115,44 @@ public class ManpowerPlanMapper {
                 plan.getSubmittedAt());
     }
 
+    public ManpowerPlanReportRow toReportRow(ManpowerPlanDesignation line, ManpowerPlan plan) {
+        int requiredStaff = StaffingCalculationUtil.calculateRequiredStaff(
+                plan.getNumberOfBeds(),
+                line.getStaffingRatio(),
+                plan.getDepartmentOperatingHours(),
+                plan.getEmployeeWorkingHours(),
+                line.getLeaveBufferPct());
+        int currentStaff = line.getCurrentStaff();
+
+        return new ManpowerPlanReportRow(
+                plan.getId(),
+                plan.getOrganization().getName(),
+                plan.getLocation().getName(),
+                plan.getHospital().getName(),
+                plan.getDepartment().getName(),
+                line.getDesignation().getName(),
+                plan.getNumberOfBeds(),
+                plan.getDepartmentOperatingHours(),
+                plan.getEmployeeWorkingHours(),
+                line.getStaffingRatio(),
+                line.getMonthlySalary(),
+                line.getLeaveBufferPct(),
+                line.getPlanned(),
+                requiredStaff,
+                currentStaff,
+                StaffingCalculationUtil.calculateVacancies(requiredStaff, currentStaff),
+                StaffingCalculationUtil.calculateExcess(requiredStaff, currentStaff),
+                StaffingCalculationUtil.calculateMonthlyBudget(requiredStaff, line.getMonthlySalary()),
+                plan.getStatus().name());
+    }
+
     public PositionRequestResponse toResponse(PositionRequest request) {
         return new PositionRequestResponse(
                 request.getId(),
                 toLookup(request.getDepartment()),
                 toLookup(request.getDesignation()),
                 request.getRequestedPositions(),
+                request.getCurrentStaff(),
                 request.getReason(),
                 request.getAdditionalMonthlyBudget(),
                 request.getStatus().name(),

@@ -22,4 +22,10 @@ public final class ErrorMessages {
     public static final String PLAN_MUST_HAVE_DESIGNATION = "A plan must have at least one designation before it can be submitted";
     public static final String INVALID_AMOUNT = "Amount must be greater than zero";
     public static final String INVALID_STATUS_TRANSITION = "Position request is already in a final state: %s";
+    public static final String DUPLICATE_DESIGNATION_IN_PLAN =
+            "Designation \"%s\" is added more than once in this plan";
+    public static final String DUPLICATE_POSITION_REQUEST =
+            "An open position request already exists for this department and designation";
+    public static final String ONLY_LOCKED_PLAN_CAN_BE_REOPENED =
+            "Only a submitted or rejected plan can be reopened for modification";
 }

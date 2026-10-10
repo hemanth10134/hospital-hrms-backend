@@ -37,6 +37,9 @@ public class PositionRequest {
     @Column(name = "requested_positions", nullable = false)
     private Integer requestedPositions;
 
+    @Column(name = "current_staff", nullable = false)
+    private Integer currentStaff = 0;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
