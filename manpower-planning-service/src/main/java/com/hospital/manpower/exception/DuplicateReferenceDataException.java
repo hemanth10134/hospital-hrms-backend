@@ -1,12 +1,12 @@
 package com.hospital.manpower.exception;
 
 /**
- * Thrown when creating a new designation master record whose code already
- * exists for the organization.
+ * Thrown when creating a master record (designation, location, hospital,
+ * department) whose name or code already exists under the same parent.
  */
-public class DesignationAlreadyExistsException extends RuntimeException {
+public class DuplicateReferenceDataException extends RuntimeException {
 
-    public DesignationAlreadyExistsException(String message) {
+    public DuplicateReferenceDataException(String message) {
         super(message);
     }
 }

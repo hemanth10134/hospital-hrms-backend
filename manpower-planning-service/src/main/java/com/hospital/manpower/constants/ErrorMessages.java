@@ -30,4 +30,9 @@ public final class ErrorMessages {
             "Only a submitted or rejected plan can be reopened for modification";
     public static final String DESIGNATION_CODE_ALREADY_EXISTS =
             "A designation with code \"%s\" already exists for this organization";
+    public static final String DESIGNATION_NAME_ALREADY_EXISTS =
+            "A designation named \"%s\" already exists for this organization";
+    public static final String LOCATION_ALREADY_EXISTS = "A location named \"%s\" already exists for this organization";
+    public static final String HOSPITAL_ALREADY_EXISTS = "A hospital named \"%s\" already exists for this location";
+    public static final String DEPARTMENT_ALREADY_EXISTS = "A department named \"%s\" already exists for this hospital";
 }

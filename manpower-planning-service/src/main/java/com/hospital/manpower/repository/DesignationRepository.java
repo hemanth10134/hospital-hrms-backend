@@ -11,4 +11,6 @@ public interface DesignationRepository extends JpaRepository<Designation, UUID> 
     List<Designation> findByOrganizationId(UUID organizationId);
 
     boolean existsByOrganizationIdAndCode(UUID organizationId, String code);
+
+    boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
 }

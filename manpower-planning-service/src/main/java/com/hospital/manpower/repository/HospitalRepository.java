@@ -9,4 +9,8 @@ import java.util.UUID;
 public interface HospitalRepository extends JpaRepository<Hospital, UUID> {
 
     List<Hospital> findByLocationId(UUID locationId);
+
+    boolean existsByLocationIdAndNameIgnoreCase(UUID locationId, String name);
+
+    boolean existsByLocationIdAndCode(UUID locationId, String code);
 }
